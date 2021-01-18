@@ -164,15 +164,6 @@ class Player(Sprite):
             elif self.coins != coins and level_map[y][x] == 'x':
                 print('Not enough')
 
-    def get_coins(self):
-        filename = 'data/map.map'
-        with open(filename, 'r') as mapFile:
-            coins = 0
-            for line in mapFile:
-                if line.split()[0] == 'Coins':
-                    coins = int(line.split()[2])
-        return coins
-
     def balance(self):
         print(self.coins)
 
@@ -181,6 +172,15 @@ class Player(Sprite):
             self.coins += 1
             pygame.mixer.Sound.play(coin_sound)
             create_particles((self.pos[0] * tile_width, self.pos[1] * tile_height), 40)
+
+
+def get_coins():
+    filename = 'data/map.map'
+    with open(filename, 'r') as mapFile:
+        coins = 0
+        for line in mapFile:
+            coins += line.count('$')
+    return coins
 
 
 class Coin(pygame.sprite.Sprite):
@@ -305,7 +305,7 @@ level_map = load_level(map_file)
 hero, max_x, max_y = generate_level(level_map)
 camera.update(hero)
 global coins
-coins = Player.get_coins(hero)
+coins = get_coins()
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
