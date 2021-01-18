@@ -31,7 +31,7 @@ height = 600
 screen_size = (weight, height)
 screen = pygame.display.set_mode(screen_size)
 FPS = 60
-screen_rect = (0, 0, 400, 300)
+screen_rect = (50, 50, 800, 400)
 
 tile_images = {
     'wall': load_image('box.png'),
@@ -55,13 +55,14 @@ class SpriteGroup(pygame.sprite.Group):
 
 
 class Particle(pygame.sprite.Sprite):
-    fire = [load_image("line.png", -1)]
-    for scale in (5, 10, 20):
-        fire.append(pygame.transform.scale(fire[0], (scale, scale)))
-
     def __init__(self, pos, dx, dy):
+        images = ['Red.png', 'Orange.png', 'Yellow.png', 'Green.png', 'Blue.png',
+                  'Dark_blue.png', 'Purple.png', 'White.png']
+        fire = [load_image(random.choice(images[0:hero.coins // 2 + 2]), -1)]
+        for scale in (5, 10, 20):
+            fire.append(pygame.transform.scale(fire[0], (scale, scale)))
         super().__init__(coin_sprites)
-        self.image = random.choice(self.fire)
+        self.image = random.choice(fire)
         self.rect = self.image.get_rect()
 
         self.velocity = [dx, dy]
@@ -74,8 +75,7 @@ class Particle(pygame.sprite.Sprite):
             self.kill()
 
 
-def create_particles(position):
-    particle_count = 8
+def create_particles(position, particle_count):
     numbers = range(-5, 6)
     for _ in range(particle_count):
         Particle((position[0] + 15, position[1] + 15), random.choice(numbers), random.choice(numbers))
@@ -129,52 +129,48 @@ class Player(Sprite):
     def move1(self, movement):
         x, y = hero.pos
         if movement == "up":
+            for coin in coin_sprites:
+                coin.kill()
             self.image = player_image
             if y > 0 and level_map[y - 1][x] != "#":
                 hero.move(x, y - 1)
-                create_particles((self.pos[0] * tile_width, self.pos[1] * tile_height))
-
+                create_particles((self.pos[0] * tile_width, self.pos[1] * tile_height), 8)
                 Player.move1(hero, "up")
         elif movement == "down":
             self.image = player_image
             self.image = pygame.transform.flip(self.image, False, True)
             if y < max_y - 1 and level_map[y + 1][x] != "#":
                 hero.move(x, y + 1)
-                create_particles((self.pos[0] * tile_width, self.pos[1] * tile_height))
-
+                create_particles((self.pos[0] * tile_width, self.pos[1] * tile_height), 8)
                 Player.move1(hero, "down")
         elif movement == "left":
             self.image = player_image2
             self.image = pygame.transform.flip(self.image, True, False)
             if x > 0 and level_map[y][x - 1] != "#":
                 hero.move(x - 1, y)
-                create_particles((self.pos[0] * tile_width, self.pos[1] * tile_height))
-
+                create_particles((self.pos[0] * tile_width, self.pos[1] * tile_height), 8)
                 Player.move1(hero, "left")
         elif movement == "right":
             self.image = player_image2
-            if x < max_x - 1 and level_map[y][x + 1] != ("#" or 'x'):
+            if x < max_x - 1 and level_map[y][x + 1] != "#":
                 hero.move(x + 1, y)
-                create_particles((self.pos[0] * tile_width, self.pos[1] * tile_height))
-                Player.move1(hero, "right")
-            elif level_map[y][x + 1] == "x" and self.coins == coins[0]:
-                hero.move(x + 1, y)
-                create_particles((self.pos[0] * tile_width, self.pos[1] * tile_height))
+                create_particles((self.pos[0] * tile_width, self.pos[1] * tile_height), 8)
                 Player.move1(hero, "right")
         elif movement == "space":
             self.image = player_image
-            if self.coins == coins[0] and level_map[y][x] == 'x':
+            if self.coins == coins and level_map[y][x] == 'x':
                 print('Victory!!!')
                 terminate()
-            elif self.coins != coins[0] and level_map[y][x] == 'x':
+            elif self.coins != coins and level_map[y][x] == 'x':
                 print('Not enough')
 
     def get_coins(self):
-        filename = 'data/coins.txt'
+        filename = 'data/map.map'
         with open(filename, 'r') as mapFile:
-            coins = []
+            coins = 0
             for line in mapFile:
-                coins.append(int(line[0]))
+                if line.split()[0] == 'Coins':
+                    coins = int(line.split()[2])
         return coins
 
     def balance(self):
@@ -184,6 +180,7 @@ class Player(Sprite):
         if pygame.sprite.spritecollide(self, coin_group, True):
             self.coins += 1
             pygame.mixer.Sound.play(coin_sound)
+            create_particles((self.pos[0] * tile_width, self.pos[1] * tile_height), 40)
 
 
 class Coin(pygame.sprite.Sprite):
@@ -310,16 +307,24 @@ coins = Player.get_coins(hero)
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
-            terminate()
+            running = False
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_UP:
                 Player.move1(hero, "up")
+                for coin in coin_sprites:
+                    coin.kill()
             elif event.key == pygame.K_DOWN:
                 Player.move1(hero, "down")
+                for coin in coin_sprites:
+                    coin.kill()
             elif event.key == pygame.K_LEFT:
                 Player.move1(hero, "left")
+                for coin in coin_sprites:
+                    coin.kill()
             elif event.key == pygame.K_RIGHT:
                 Player.move1(hero, "right")
+                for coin in coin_sprites:
+                    coin.kill()
             elif event.key == pygame.K_c:
                 Player.balance(hero)
             elif event.key == pygame.K_SPACE:
