@@ -110,8 +110,6 @@ class Player(Sprite):
         self.pos = (pos_x, pos_y)
 
     def move(self, x, y):
-        camera.dx -= tile_width * (x - self.pos[0])
-        camera.dy -= tile_height * (y - self.pos[1])
         self.pos = (x, y)
         self.rect = self.image.get_rect().move(
             tile_width * self.pos[0] + 15, tile_height * self.pos[1] + 5)
@@ -159,7 +157,9 @@ class Player(Sprite):
         elif movement == "space":
             self.image = player_image
             if self.coins == coins and level_map[y][x] == 'x':
-                print('Victory!!!')
+                print('Victory!')
+                pygame.mixer.Sound.play(victory_sound)
+                pygame.time.delay(1800)
                 terminate()
             elif self.coins != coins and level_map[y][x] == 'x':
                 print('Not enough')
@@ -297,6 +297,8 @@ def generate_level(level):
 
 
 coin_sound = pygame.mixer.Sound('data/Coin.mp3')
+leap_sound = pygame.mixer.Sound('data/Leap.mp3')
+victory_sound = pygame.mixer.Sound('data/Victory.mp3')
 start_screen()
 camera = Camera()
 level_map = load_level(map_file)
@@ -310,18 +312,22 @@ while running:
             running = False
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_UP:
+                pygame.mixer.Sound.play(leap_sound)
                 Player.move1(hero, "up")
                 for coin in coin_sprites:
                     coin.kill()
             elif event.key == pygame.K_DOWN:
+                pygame.mixer.Sound.play(leap_sound)
                 Player.move1(hero, "down")
                 for coin in coin_sprites:
                     coin.kill()
             elif event.key == pygame.K_LEFT:
+                pygame.mixer.Sound.play(leap_sound)
                 Player.move1(hero, "left")
                 for coin in coin_sprites:
                     coin.kill()
             elif event.key == pygame.K_RIGHT:
+                pygame.mixer.Sound.play(leap_sound)
                 Player.move1(hero, "right")
                 for coin in coin_sprites:
                     coin.kill()
