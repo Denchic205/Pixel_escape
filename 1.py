@@ -54,7 +54,7 @@ class Particle(pygame.sprite.Sprite):
     def __init__(self, pos, dx, dy):
         images = ['Red.png', 'Orange.png', 'Yellow.png', 'Green.png', 'Blue.png',
                   'Dark_blue.png', 'Purple.png', 'White.png']
-        fire = [load_image(random.choice(images[0:hero.coins // 2 + 2]), -1)]
+        fire = [load_image(random.choice(images), -1)]
         for scale in (5, 10, 20):
             fire.append(pygame.transform.scale(fire[0], (scale, scale)))
         super().__init__(coin_sprites)
@@ -100,6 +100,7 @@ class Player(Sprite):
         super().__init__(hero_group)
         self.image = player_image
         self.coins = 0
+        self.levels = 0
         self.rect = self.image.get_rect().move(
             tile_width * pos_x + 15, tile_height * pos_y + 5)
         self.rotation = 'up'
@@ -153,12 +154,15 @@ class Player(Sprite):
         elif movement == "space":
             self.image = player_image
             if self.coins == coins and level_map[y][x] == 'x':
-                print('Victory!')
+                self.levels += 1
+                print('Level', self.levels, 'completed')
                 pygame.mixer.Sound.play(victory_sound)
-                pygame.time.delay(1800)
-                terminate()
-            elif self.coins != coins and level_map[y][x] == 'x':
+                hero.move(x - 7, y + 4)
+            elif self.coins < coins and level_map[y][x] == 'x':
                 print('Not enough')
+            else:
+                print('ERROR')
+                terminate()
 
     def balance(self):
         print(self.coins)
@@ -300,8 +304,6 @@ start_screen()
 level_map = load_level(map_file)
 hero, max_x, max_y = generate_level(level_map)
 level_indexes = level_line_counter()
-global coins
-coins = get_coins(int(level_indexes[0]) - 1)
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -340,4 +342,8 @@ while running:
     pygame.display.flip()
     for coin in coin_sprites:
         coin.kill()
+    if hero.levels == len(level_indexes):
+        pygame.time.delay(1800)
+        terminate()
+    coins = get_coins(int(level_indexes[hero.levels]) - 1)
 pygame.quit()
