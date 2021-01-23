@@ -26,8 +26,8 @@ def load_image(name, color_key=None):
 
 
 pygame.init()
-weight = 600
-height = 600
+weight = 1000
+height = 700
 screen_size = (weight, height)
 screen = pygame.display.set_mode(screen_size)
 FPS = 60
@@ -169,14 +169,29 @@ class Player(Sprite):
             pygame.mixer.Sound.play(coin_sound)
             create_particles((self.pos[0] * tile_width, self.pos[1] * tile_height), 40)
 
-
-def get_coins():
+def get_coins(n):
     filename = 'data/map.map'
     with open(filename, 'r') as mapFile:
         coins = 0
+        lines = []
         for line in mapFile:
+            lines.append(line)
+        for line in lines[0:n]:
             coins += line.count('$')
     return coins
+
+
+def level_line_counter():
+    filename = 'data/map.map'
+    lines = []
+    indexes = []
+    with open(filename, 'r') as mapFile:
+        for line in mapFile:
+            lines.append(line)
+    for line in lines:
+        if '|' in line:
+            indexes.append(lines.index(line))
+    return indexes
 
 
 class Coin(pygame.sprite.Sprite):
@@ -203,20 +218,6 @@ class Coin(pygame.sprite.Sprite):
     def update(self):
         self.cur_frame = (self.cur_frame + 1) % len(self.frames)
         self.image = self.frames[self.cur_frame]
-
-
-class Camera:
-    def __init__(self):
-        self.dx = 0
-        self.dy = 0
-
-    def apply(self, obj):
-        obj.rect.x = obj.abs_pos[0] + self.dx
-        obj.rect.y = obj.abs_pos[1] + self.dy
-
-    def update(self, target):
-        self.dx = 0
-        self.dy = 0
 
 
 player = None
@@ -296,12 +297,11 @@ coin_sound = pygame.mixer.Sound('data/Coin.mp3')
 leap_sound = pygame.mixer.Sound('data/Leap.mp3')
 victory_sound = pygame.mixer.Sound('data/Victory.mp3')
 start_screen()
-camera = Camera()
 level_map = load_level(map_file)
 hero, max_x, max_y = generate_level(level_map)
-camera.update(hero)
+level_indexes = level_line_counter()
 global coins
-coins = get_coins()
+coins = get_coins(int(level_indexes[0]) - 1)
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
