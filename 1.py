@@ -52,9 +52,10 @@ class SpriteGroup(pygame.sprite.Group):
 
 class Particle(pygame.sprite.Sprite):
     def __init__(self, pos, dx, dy):
-        images = ['Red.png', 'Orange.png', 'Yellow.png', 'Green.png', 'Blue.png',
-                  'Dark_blue.png', 'Purple.png', 'White.png']
-        fire = [load_image(random.choice(images), -1)]
+        images = ['Red', 'Orange', 'Yellow', 'Green', 'Blue',
+                  'Dark_blue', 'Purple', 'White']
+        fire = [load_image(str(random.choice(images) + random.choice(['_star.png',
+                                                                 '_circle.png', '_dot.png'])), -1)]
         for scale in (5, 10, 20):
             fire.append(pygame.transform.scale(fire[0], (scale, scale)))
         super().__init__(coin_sprites)
@@ -155,7 +156,7 @@ class Player(Sprite):
             self.image = player_image
             if self.coins == coins and level_map[y][x] == 'x':
                 self.levels += 1
-                print('Level', self.levels, 'completed')
+                print('Level', self.levels, 'completed!')
                 pygame.mixer.Sound.play(victory_sound)
                 hero.move(x - 7, y + 4)
             elif self.coins < coins and level_map[y][x] == 'x':
