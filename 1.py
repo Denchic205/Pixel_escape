@@ -55,7 +55,7 @@ class Particle(pygame.sprite.Sprite):
         images = ['Red', 'Orange', 'Yellow', 'Green', 'Blue',
                   'Dark_blue', 'Purple', 'White']
         fire = [load_image(str(random.choice(images) + random.choice(['_star.png',
-                                                                 '_circle.png', '_dot.png'])), -1)]
+                                                                      '_circle.png', '_dot.png'])), -1)]
         for scale in (5, 10, 20):
             fire.append(pygame.transform.scale(fire[0], (scale, scale)))
         super().__init__(coin_sprites)
@@ -174,6 +174,7 @@ class Player(Sprite):
             pygame.mixer.Sound.play(coin_sound)
             create_particles((self.pos[0] * tile_width, self.pos[1] * tile_height), 40)
 
+
 def get_coins(n):
     filename = 'data/map.map'
     with open(filename, 'r') as mapFile:
@@ -242,14 +243,14 @@ def terminate():
 def start_screen():
     intro_text = ["Pixel escape", "",
                   "",
-                  "Level 1"]
+                  "Dungeon 1"]
 
     fon = pygame.transform.scale(load_image('fon.png'), screen_size)
     screen.blit(fon, (0, 0))
     font = pygame.font.Font(None, 30)
     text_coord = 50
     for line in intro_text:
-        string_rendered = font.render(line, 1, pygame.Color('white'))
+        string_rendered = font.render(line, True, pygame.Color('green'))
         intro_rect = string_rendered.get_rect()
         text_coord += 10
         intro_rect.top = text_coord
