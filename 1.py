@@ -311,22 +311,22 @@ while running:
         if event.type == pygame.QUIT:
             running = False
         elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_UP:
+            if event.key == pygame.K_w or event.key == pygame.K_UP:
                 pygame.mixer.Sound.play(leap_sound)
                 Player.move1(hero, "up")
                 for coin in coin_sprites:
                     coin.kill()
-            elif event.key == pygame.K_DOWN:
+            elif event.key == pygame.K_DOWN or event.key == pygame.K_s:
                 pygame.mixer.Sound.play(leap_sound)
                 Player.move1(hero, "down")
                 for coin in coin_sprites:
                     coin.kill()
-            elif event.key == pygame.K_LEFT:
+            elif event.key == pygame.K_LEFT or event.key == pygame.K_a:
                 pygame.mixer.Sound.play(leap_sound)
                 Player.move1(hero, "left")
                 for coin in coin_sprites:
                     coin.kill()
-            elif event.key == pygame.K_RIGHT:
+            elif event.key == pygame.K_RIGHT or event.key == pygame.K_d:
                 pygame.mixer.Sound.play(leap_sound)
                 Player.move1(hero, "right")
                 for coin in coin_sprites:
