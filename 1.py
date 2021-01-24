@@ -31,7 +31,7 @@ height = 700
 screen_size = (weight, height)
 screen = pygame.display.set_mode(screen_size)
 FPS = 60
-screen_rect = (50, 50, 800, 400)
+screen_rect = (50, 50, 800, 800)
 
 tile_images = {
     'wall': load_image('box.png'),
