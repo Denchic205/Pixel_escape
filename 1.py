@@ -65,7 +65,7 @@ class Particle(pygame.sprite.Sprite):
         super().__init__(coin_sprites)
         self.image = random.choice(fire)
         self.rect = self.image.get_rect()
-
+        self.rect.x, self.rect.y = pos
         self.velocity = [dx, dy]
         self.rect.x, self.rect.y = pos
 
