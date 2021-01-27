@@ -26,7 +26,7 @@ def load_image(name, color_key=None):
 
 
 pygame.init()
-weight = 1000
+weight = 1100
 height = 700
 screen_size = (weight, height)
 screen = pygame.display.set_mode(screen_size)
@@ -190,7 +190,7 @@ def get_coins(n):
         coins = 0
         lines = []
         for line in mapFile:
-            lines.append(line)
+            lines.append(line[0:line.index(':')])
         for line in lines[0:n]:
             coins += line.count('$')
     return coins
