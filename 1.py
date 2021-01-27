@@ -37,6 +37,10 @@ tile_images = {
     'wall': load_image('box.png'),
     'empty': load_image('empty.png'),
     'exit': load_image('exit.png'),
+    'Spikes_left': pygame.transform.flip(load_image('Spikes_right_left.png'), True, False),
+    'Spikes_right': load_image('Spikes_right_left.png'),
+    'Spikes_up': pygame.transform.flip(load_image('Spikes_down_up.png'), False, True),
+    'Spikes_down': load_image('Spikes_down_up.png')
 }
 player_image = load_image('main.png')
 player_image2 = load_image('main2.png')
@@ -148,7 +152,7 @@ class Player(Sprite):
                 Player.move1(hero, "left")
         elif movement == "right":
             self.image = player_image2
-            if x < max_x - 1 and level_map[y][x + 1] != "#":
+            if x < max_x and level_map[y][x + 1] != "#":
                 hero.move(x + 1, y)
                 create_particles((self.pos[0] * tile_width, self.pos[1] * tile_height), 8)
                 Player.move1(hero, "right")
@@ -158,7 +162,8 @@ class Player(Sprite):
                 self.levels += 1
                 print('Level', self.levels, 'completed!')
                 pygame.mixer.Sound.play(victory_sound)
-                hero.move(x - 7, y + 4)
+                if self.levels == 1:
+                    hero.move(x - 7, y + 4)
             elif self.coins < coins and level_map[y][x] == 'x':
                 print('Not enough')
             else:
@@ -169,6 +174,9 @@ class Player(Sprite):
         print(self.coins)
 
     def update(self):
+        if level_map[hero.pos[1]][hero.pos[0]] in ['R', 'L', 'U', 'D']:
+            print("YOU DIED!")
+            terminate()
         if pygame.sprite.spritecollide(self, coin_group, True):
             self.coins += 1
             pygame.mixer.Sound.play(coin_sound)
@@ -287,6 +295,14 @@ def generate_level(level):
                 Tile('empty', x, y)
             elif level[y][x] == '#':
                 Tile('wall', x, y)
+            elif level[y][x] == 'L':
+                Tile('Spikes_left', x, y)
+            elif level[y][x] == 'R':
+                Tile('Spikes_right', x, y)
+            elif level[y][x] == 'U':
+                Tile('Spikes_up', x, y)
+            elif level[y][x] == 'D':
+                Tile('Spikes_down', x, y)
             elif level[y][x] == 'x':
                 Tile('exit', x, y)
             elif level[y][x] == '$':
