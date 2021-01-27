@@ -176,6 +176,7 @@ class Player(Sprite):
     def update(self):
         if level_map[hero.pos[1]][hero.pos[0]] in ['R', 'L', 'U', 'D']:
             print("YOU DIED!")
+            print('You completed', self.levels, 'level(s) and collected', str(self.coins), 'coin(s). Nice score!')
             terminate()
         if pygame.sprite.spritecollide(self, coin_group, True):
             self.coins += 1
