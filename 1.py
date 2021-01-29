@@ -31,7 +31,7 @@ height = 700
 screen_size = (weight, height)
 screen = pygame.display.set_mode(screen_size)
 FPS = 60
-screen_rect = (50, 50, 800, 800)
+screen_rect = (0, 0, weight, height)
 
 tile_images = {
     'wall': load_image('box.png'),
@@ -106,6 +106,7 @@ class Player(Sprite):
         self.image = player_image
         self.coins = 0
         self.levels = 0
+        self.total_coins = 0
         self.rect = self.image.get_rect().move(
             tile_width * pos_x + 15, tile_height * pos_y + 5)
         self.rotation = 'up'
@@ -160,18 +161,21 @@ class Player(Sprite):
             self.image = player_image
             if self.coins == coins and level_map[y][x] == 'x':
                 self.levels += 1
+                self.total_coins += self.coins
+                self.coins = 0
                 print('Level', self.levels, 'completed!')
                 pygame.mixer.Sound.play(victory_sound)
                 if self.levels == 1:
                     hero.move(x - 7, y + 4)
             elif self.coins < coins and level_map[y][x] == 'x':
                 print('Not enough')
-            else:
-                print('ERROR')
-                terminate()
+            elif hero.levels + 1 == len(coins):
+                self.total_coins += self.coins
+                self.levels += 1
+                print('Level', self.levels, 'completed!')
 
     def balance(self):
-        print(self.coins)
+        print(self.total_coins)
 
     def update(self):
         if level_map[hero.pos[1]][hero.pos[0]] in ['R', 'L', 'U', 'D']:
@@ -187,12 +191,30 @@ class Player(Sprite):
 def get_coins(n):
     filename = 'data/map.map'
     with open(filename, 'r') as mapFile:
-        coins = 0
+        coins = []
         lines = []
+        counter = 0
         for line in mapFile:
-            lines.append(line[0:line.index(':')])
-        for line in lines[0:n]:
-            coins += line.count('$')
+            if counter != 0:
+                if hero.levels % 2 == 0:
+                    lines.append(line.strip())
+            counter += 1
+        coin = 0
+        for line in lines[0:n[0]]:
+            coin += line[0:line.index(':')].count('$')
+        coins.append(coin)
+        coin = 0
+        for line in lines[0:n[0]]:
+            coin += line[line.index(':'):].count('$')
+        coins.append(coin)
+        coin = 0
+        for line in lines[n[0]:n[1]]:
+            coin += line[0:line.index(':')].count('$')
+        coins.append(coin)
+        coin = 0
+        for line in lines[n[0]:n[1]]:
+            coin += line[line.index(':'):].count('$')
+        coins.append(coin)
     return coins
 
 
@@ -282,10 +304,22 @@ def load_level(filename):
     filename = "data/" + filename
     with open(filename, 'r') as mapFile:
         level_map = []
+        ind = 0
         for line in mapFile:
-            level_map.append(line.strip())
+            if ind != 0:
+                level_map.append(line.strip())
+            ind += 1
     max_width = max(map(len, level_map))
     return list(map(lambda x: list(x.ljust(max_width, '.')), level_map))
+
+
+def get_teleport(filename):
+    filename = "data/" + filename
+    with open(filename, 'r') as mapFile:
+        for i in mapFile:
+            teleports = i.strip().split('-')
+            break
+        return teleports
 
 
 def generate_level(level):
@@ -316,13 +350,16 @@ def generate_level(level):
     return new_player, x, y
 
 
+pygame.display.set_caption('Pixel escape')
 coin_sound = pygame.mixer.Sound('data/Coin.mp3')
 leap_sound = pygame.mixer.Sound('data/Leap.mp3')
 victory_sound = pygame.mixer.Sound('data/Victory.mp3')
 start_screen()
 level_map = load_level(map_file)
+teleports = get_teleport(map_file)
 hero, max_x, max_y = generate_level(level_map)
 level_indexes = level_line_counter()
+coins = get_coins(level_indexes)
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -361,7 +398,9 @@ while running:
     pygame.display.flip()
     for coin in coin_sprites:
         coin.kill()
-    if hero.levels == len(level_indexes):
+    if hero.levels == len(coins):
+        pygame.mixer.Sound.play(victory_sound)
+        print('You won and collected', hero.total_coins, 'coins. Congrats!')
         pygame.time.delay(1800)
         terminate()
     coins = get_coins(int(level_indexes[hero.levels]) - 1)
