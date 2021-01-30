@@ -87,8 +87,6 @@ class Sprite(pygame.sprite.Sprite):
         super().__init__(group)
         self.rect = None
 
-    def get_event(self, event):
-        pass
 
 
 class Tile(Sprite):
@@ -133,27 +131,27 @@ class Player(Sprite):
             for coin in coin_sprites:
                 coin.kill()
             self.image = player_image
-            if y > 0 and level_map[y - 1][x] != "#":
+            if y > 0 and level_map[y - 1][x] not in ["#", "R", "U", "L"]:
                 hero.move(x, y - 1)
                 create_particles((self.pos[0] * tile_width, self.pos[1] * tile_height), 8)
                 Player.move1(hero, "up")
         elif movement == "down":
             self.image = player_image
             self.image = pygame.transform.flip(self.image, False, True)
-            if y < max_y - 1 and level_map[y + 1][x] != "#":
+            if y < max_y - 1 and level_map[y + 1][x] not in ["#", "R", "L", "D"]:
                 hero.move(x, y + 1)
                 create_particles((self.pos[0] * tile_width, self.pos[1] * tile_height), 8)
                 Player.move1(hero, "down")
         elif movement == "left":
             self.image = player_image2
             self.image = pygame.transform.flip(self.image, True, False)
-            if x > 0 and level_map[y][x - 1] != "#":
+            if x > 0 and level_map[y][x - 1] not in ["#", "L", "U", "D"]:
                 hero.move(x - 1, y)
                 create_particles((self.pos[0] * tile_width, self.pos[1] * tile_height), 8)
                 Player.move1(hero, "left")
         elif movement == "right":
             self.image = player_image2
-            if x < max_x and level_map[y][x + 1] != "#":
+            if x < max_x and level_map[y][x + 1] not in ["#", "R", "U", "D"]:
                 hero.move(x + 1, y)
                 create_particles((self.pos[0] * tile_width, self.pos[1] * tile_height), 8)
                 Player.move1(hero, "right")
@@ -173,12 +171,15 @@ class Player(Sprite):
                 self.total_coins += self.coins
                 self.levels += 1
                 print('Level', self.levels, 'completed!')
+            else:
+                print('ERROR')
 
     def balance(self):
         print(self.total_coins)
 
     def update(self):
         if level_map[hero.pos[1]][hero.pos[0]] in ['R', 'L', 'U', 'D']:
+            self.total_coins += self.coins
             print("YOU DIED!")
             print('You completed', self.levels, 'level(s) and collected', str(self.coins), 'coin(s). Nice score!')
             terminate()
@@ -209,11 +210,11 @@ def get_coins(n):
         coins.append(coin)
         coin = 0
         for line in lines[n[0]:n[1]]:
-            coin += line[0:line.index(':')].count('$')
+            coin += line[line.index(':'):].count('$')
         coins.append(coin)
         coin = 0
         for line in lines[n[0]:n[1]]:
-            coin += line[line.index(':'):].count('$')
+            coin += line[0:line.index(':')].count('$')
         coins.append(coin)
     return coins
 
@@ -317,7 +318,7 @@ def get_teleport(filename):
     filename = "data/" + filename
     with open(filename, 'r') as mapFile:
         for i in mapFile:
-            teleports = i.strip().split('-')
+            teleports = i.strip().split('/')
             break
         return teleports
 
