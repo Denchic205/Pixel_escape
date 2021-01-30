@@ -27,11 +27,12 @@ def load_image(name, color_key=None):
 
 pygame.init()
 weight = 1100
-height = 700
+height = 650
 screen_size = (weight, height)
-screen = pygame.display.set_mode(screen_size)
+screen = pygame.display.set_mode((1100, 750))
 FPS = 60
 screen_rect = (0, 0, weight, height)
+pygame.display.set_icon(load_image('main.png'))
 
 tile_images = {
     'wall': load_image('box.png'),
@@ -62,12 +63,11 @@ class Particle(pygame.sprite.Sprite):
                                                                       '_circle.png', '_dot.png'])), -1)]
         for scale in (5, 10, 20):
             fire.append(pygame.transform.scale(fire[0], (scale, scale)))
-        super().__init__(coin_sprites)
+        super().__init__(particle_sprites)
         self.image = random.choice(fire)
         self.rect = self.image.get_rect()
         self.rect.x, self.rect.y = pos
         self.velocity = [dx, dy]
-        self.rect.x, self.rect.y = pos
 
     def update(self):
         self.rect.x += self.velocity[0]
@@ -95,7 +95,6 @@ class Tile(Sprite):
         self.image = tile_images[tile_type]
         self.rect = self.image.get_rect().move(
             tile_width * pos_x, tile_height * pos_y)
-        self.abs_pos = (self.rect.x, self.rect.y)
 
 
 class Player(Sprite):
@@ -118,8 +117,8 @@ class Player(Sprite):
         sprite_group.update()
         hero_group.draw(screen)
         hero.update()
-        coin_sprites.draw(screen)
-        coin_sprites.update()
+        particle_sprites.draw(screen)
+        particle_sprites.update()
         coin_group.draw(screen)
         coin_group.update()
         pygame.display.flip()
@@ -128,8 +127,6 @@ class Player(Sprite):
     def move1(self, movement):
         x, y = hero.pos
         if movement == "up":
-            for coin in coin_sprites:
-                coin.kill()
             self.image = player_image
             if y > 0 and level_map[y - 1][x] not in ["#", "R", "U", "L"]:
                 hero.move(x, y - 1)
@@ -157,15 +154,14 @@ class Player(Sprite):
                 Player.move1(hero, "right")
         elif movement == "space":
             self.image = player_image
-            if self.coins == coins and level_map[y][x] == 'x':
+            if self.coins == coins[self.levels] and level_map[y][x] == 'x' and hero.levels + 1 != len(coins):
+                hero.pos = int(teleports[self.levels].split(',')[0]), int(teleports[self.levels].split(',')[1])
                 self.levels += 1
                 self.total_coins += self.coins
                 self.coins = 0
                 print('Level', self.levels, 'completed!')
                 pygame.mixer.Sound.play(victory_sound)
-                if self.levels == 1:
-                    hero.move(x - 7, y + 4)
-            elif self.coins < coins and level_map[y][x] == 'x':
+            elif self.coins < coins[self.levels] and level_map[y][x] == 'x':
                 print('Not enough')
             elif hero.levels + 1 == len(coins):
                 self.total_coins += self.coins
@@ -181,7 +177,7 @@ class Player(Sprite):
         if level_map[hero.pos[1]][hero.pos[0]] in ['R', 'L', 'U', 'D']:
             self.total_coins += self.coins
             print("YOU DIED!")
-            print('You completed', self.levels, 'level(s) and collected', str(self.coins), 'coin(s). Nice score!')
+            print('You completed', self.levels + 1, 'level(s) and collected', self.total_coins, 'coin(s). Nice score!')
             terminate()
         if pygame.sprite.spritecollide(self, coin_group, True):
             self.coins += 1
@@ -226,9 +222,11 @@ def level_line_counter():
     with open(filename, 'r') as mapFile:
         for line in mapFile:
             lines.append(line)
+    col = 0
     for line in lines:
         if '|' in line:
-            indexes.append(lines.index(line))
+            indexes.append(col)
+        col += 1
     return indexes
 
 
@@ -238,8 +236,8 @@ class Coin(pygame.sprite.Sprite):
     def __init__(self, x, y, group, sheet, col, row):
         super().__init__(group)
         self.rect = self.image.get_rect()
-        self.rect.x = x * 50 + 10
-        self.rect.y = y * 50 + 10
+        self.rect.x = x * tile_width + 10
+        self.rect.y = y * tile_height + 10
         self.frames = []
         self.cut_sheet(sheet, col, row)
         self.cur_frame = 0
@@ -264,7 +262,7 @@ clock = pygame.time.Clock()
 sprite_group = SpriteGroup()
 hero_group = SpriteGroup()
 coin_group = SpriteGroup()
-coin_sprites = SpriteGroup()
+particle_sprites = SpriteGroup()
 
 
 def terminate():
@@ -273,29 +271,15 @@ def terminate():
 
 
 def start_screen():
-    intro_text = ["Pixel escape", "",
-                  "",
-                  "Dungeon 1"]
-
-    fon = pygame.transform.scale(load_image('fon.png'), screen_size)
+    fon = pygame.transform.scale(load_image('fon.png'), (1100, 800))
     screen.blit(fon, (0, 0))
-    font = pygame.font.Font(None, 30)
-    text_coord = 50
-    for line in intro_text:
-        string_rendered = font.render(line, True, pygame.Color('green'))
-        intro_rect = string_rendered.get_rect()
-        text_coord += 10
-        intro_rect.top = text_coord
-        intro_rect.x = 10
-        text_coord += intro_rect.height
-        screen.blit(string_rendered, intro_rect)
-
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 terminate()
             elif event.type == pygame.KEYDOWN or \
                     event.type == pygame.MOUSEBUTTONDOWN:
+                pygame.display.set_mode(screen_size)
                 return
         pygame.display.flip()
         clock.tick(FPS)
@@ -351,7 +335,7 @@ def generate_level(level):
     return new_player, x, y
 
 
-pygame.display.set_caption('Pixel escape')
+pygame.display.set_caption('Space escape')
 coin_sound = pygame.mixer.Sound('data/Coin.mp3')
 leap_sound = pygame.mixer.Sound('data/Leap.mp3')
 victory_sound = pygame.mixer.Sound('data/Victory.mp3')
@@ -369,22 +353,22 @@ while running:
             if event.key == pygame.K_w or event.key == pygame.K_UP:
                 pygame.mixer.Sound.play(leap_sound)
                 Player.move1(hero, "up")
-                for coin in coin_sprites:
+                for coin in particle_sprites:
                     coin.kill()
             elif event.key == pygame.K_DOWN or event.key == pygame.K_s:
                 pygame.mixer.Sound.play(leap_sound)
                 Player.move1(hero, "down")
-                for coin in coin_sprites:
+                for coin in particle_sprites:
                     coin.kill()
             elif event.key == pygame.K_LEFT or event.key == pygame.K_a:
                 pygame.mixer.Sound.play(leap_sound)
                 Player.move1(hero, "left")
-                for coin in coin_sprites:
+                for coin in particle_sprites:
                     coin.kill()
             elif event.key == pygame.K_RIGHT or event.key == pygame.K_d:
                 pygame.mixer.Sound.play(leap_sound)
                 Player.move1(hero, "right")
-                for coin in coin_sprites:
+                for coin in particle_sprites:
                     coin.kill()
             elif event.key == pygame.K_c:
                 Player.balance(hero)
@@ -397,12 +381,11 @@ while running:
     hero_group.draw(screen)
     coin_group.draw(screen)
     pygame.display.flip()
-    for coin in coin_sprites:
+    for coin in particle_sprites:
         coin.kill()
     if hero.levels == len(coins):
         pygame.mixer.Sound.play(victory_sound)
         print('You won and collected', hero.total_coins, 'coins. Congrats!')
         pygame.time.delay(1800)
         terminate()
-    coins = get_coins(int(level_indexes[hero.levels]) - 1)
 pygame.quit()
