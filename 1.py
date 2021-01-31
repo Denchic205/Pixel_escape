@@ -27,7 +27,7 @@ def load_image(name, color_key=None):
 
 pygame.init()
 weight = 1100
-height = 650
+height = 800
 screen_size = (weight, height)
 screen = pygame.display.set_mode((1100, 750))
 FPS = 60
@@ -88,7 +88,6 @@ class Sprite(pygame.sprite.Sprite):
         self.rect = None
 
 
-
 class Tile(Sprite):
     def __init__(self, tile_type, pos_x, pos_y):
         super().__init__(sprite_group)
@@ -108,21 +107,23 @@ class Player(Sprite):
             tile_width * pos_x + 15, tile_height * pos_y + 5)
         self.rotation = 'up'
         self.pos = (pos_x, pos_y)
+        self.reloading = False
 
     def move(self, x, y):
-        self.pos = (x, y)
-        self.rect = self.image.get_rect().move(
-            tile_width * self.pos[0] + 15, tile_height * self.pos[1] + 5)
-        sprite_group.draw(screen)
-        sprite_group.update()
-        hero_group.draw(screen)
-        hero.update()
-        particle_sprites.draw(screen)
-        particle_sprites.update()
-        coin_group.draw(screen)
-        coin_group.update()
-        pygame.display.flip()
-        clock.tick(16)
+        if not self.reloading:
+            self.pos = (x, y)
+            self.rect = self.image.get_rect().move(
+                tile_width * self.pos[0] + 15, tile_height * self.pos[1] + 5)
+            sprite_group.draw(screen)
+            sprite_group.update()
+            hero_group.draw(screen)
+            hero.update()
+            particle_sprites.draw(screen)
+            particle_sprites.update()
+            coin_group.draw(screen)
+            coin_group.update()
+            pygame.display.flip()
+            clock.tick(16)
 
     def move1(self, movement):
         x, y = hero.pos
@@ -178,7 +179,7 @@ class Player(Sprite):
             self.total_coins += self.coins
             print("YOU DIED!")
             print('You completed', self.levels + 1, 'level(s) and collected', self.total_coins, 'coin(s). Nice score!')
-            terminate()
+            game_over_screen()
         if pygame.sprite.spritecollide(self, coin_group, True):
             self.coins += 1
             pygame.mixer.Sound.play(coin_sound)
@@ -285,6 +286,40 @@ def start_screen():
         clock.tick(FPS)
 
 
+def game_over_screen():
+    fon = pygame.transform.scale(load_image('lost.png'), (1100, 800))
+    screen.blit(fon, (0, 0))
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                terminate()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_q:
+                    terminate()
+                elif event.key == pygame.K_r:
+                    hero.pos = (0, 0)
+                    screen.fill(pygame.Color("black"))
+                    hero.reloading = True
+                    return
+        pygame.display.flip()
+        clock.tick(FPS)
+
+
+def victory_screen():
+    fon = pygame.transform.scale(load_image('victory.png'), (1100, 800))
+    screen.blit(fon, (0, 0))
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                terminate()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_q:
+                    terminate()
+                return
+        pygame.display.flip()
+        clock.tick(FPS)
+
+
 def load_level(filename):
     filename = "data/" + filename
     with open(filename, 'r') as mapFile:
@@ -346,6 +381,31 @@ hero, max_x, max_y = generate_level(level_map)
 level_indexes = level_line_counter()
 coins = get_coins(level_indexes)
 while running:
+    if hero.reloading:
+        print('Reloading level...')
+        player = None
+        running = True
+        clock = pygame.time.Clock()
+        sprite_group = SpriteGroup()
+        hero_group = SpriteGroup()
+        coin_group = SpriteGroup()
+        particle_sprites = SpriteGroup()
+        start_screen()
+        level_map = load_level(map_file)
+        teleports = get_teleport(map_file)
+        hero, max_x, max_y = generate_level(level_map)
+        level_indexes = level_line_counter()
+        coins = get_coins(level_indexes)
+        hero.coins = 0
+        hero.total_coins = 0
+        screen.fill(pygame.Color("black"))
+        coin_group.draw(screen)
+        hero.move(hero.pos[0], hero.pos[1])
+        sprite_group.draw(screen)
+        hero_group.draw(screen)
+        coin_group.draw(screen)
+        pygame.display.flip()
+        hero.reloading = False
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -374,8 +434,9 @@ while running:
                 Player.balance(hero)
             elif event.key == pygame.K_SPACE:
                 Player.move1(hero, "space")
+            elif event.key == pygame.K_q:
+                terminate()
     screen.fill(pygame.Color("black"))
-    coin_group.draw(screen)
     hero.move(hero.pos[0], hero.pos[1])
     sprite_group.draw(screen)
     hero_group.draw(screen)
@@ -386,6 +447,5 @@ while running:
     if hero.levels == len(coins):
         pygame.mixer.Sound.play(victory_sound)
         print('You won and collected', hero.total_coins, 'coins. Congrats!')
-        pygame.time.delay(1800)
-        terminate()
+        victory_screen()
 pygame.quit()
