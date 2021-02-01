@@ -1,17 +1,11 @@
 import pygame
 import os
 import sys
-import argparse
 import random
-
-parser = argparse.ArgumentParser()
-parser.add_argument("map", type=str, nargs="?", default="map.map")
-args = parser.parse_args()
-map_file = args.map
 
 
 def load_image(name, color_key=None):
-    fullname = os.path.join('data', name)
+    fullname = os.path.join('data/images', name)
     try:
         image = pygame.image.load(fullname)
     except pygame.error as message:
@@ -23,6 +17,16 @@ def load_image(name, color_key=None):
             color_key = image.get_at((0, 0))
         image.set_colorkey(color_key)
     return image
+
+
+def load_sound(name):
+    fullname = os.path.join('data/Sounds', name)
+    try:
+        os.path.isfile(fullname)
+    except Exception as message:
+        print('Не удаётся загрузить:', name)
+        raise SystemExit(message)
+    return fullname
 
 
 pygame.init()
@@ -164,12 +168,10 @@ class Player(Sprite):
                 pygame.mixer.Sound.play(victory_sound)
             elif self.coins < coins[self.levels] and level_map[y][x] == 'x':
                 print('Not enough')
-            elif hero.levels + 1 == len(coins):
+            elif hero.levels + 1 == len(coins) and self.coins == coins[self.levels] and level_map[y][x] == 'x':
                 self.total_coins += self.coins
                 self.levels += 1
                 print('Level', self.levels, 'completed!')
-            else:
-                print('ERROR')
 
     def balance(self):
         print(self.total_coins)
@@ -186,8 +188,8 @@ class Player(Sprite):
             create_particles((self.pos[0] * tile_width, self.pos[1] * tile_height), 40)
 
 
-def get_coins(n):
-    filename = 'data/map.map'
+def get_coins(n, filename):
+    filename = 'data/Locations/' + filename
     with open(filename, 'r') as mapFile:
         coins = []
         lines = []
@@ -216,8 +218,8 @@ def get_coins(n):
     return coins
 
 
-def level_line_counter():
-    filename = 'data/map.map'
+def level_line_counter(filename):
+    filename = 'data/Locations/' + filename
     lines = []
     indexes = []
     with open(filename, 'r') as mapFile:
@@ -287,6 +289,8 @@ def start_screen():
 
 
 def game_over_screen():
+    pygame.mixer.stop()
+    pygame.mixer.Sound.play(death_sound)
     fon = pygame.transform.scale(load_image('lost.png'), (1100, 800))
     screen.blit(fon, (0, 0))
     while True:
@@ -306,8 +310,10 @@ def game_over_screen():
 
 
 def victory_screen():
+    pygame.mixer.stop()
     fon = pygame.transform.scale(load_image('victory.png'), (1100, 800))
     screen.blit(fon, (0, 0))
+    pygame.mixer.Sound.play(full_victory_sound)
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -315,13 +321,18 @@ def victory_screen():
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_q:
                     terminate()
-                return
+                    return
+                elif event.key == pygame.K_r:
+                    hero.pos = (0, 0)
+                    screen.fill(pygame.Color("black"))
+                    hero.reloading = True
+                    return
         pygame.display.flip()
         clock.tick(FPS)
 
 
 def load_level(filename):
-    filename = "data/" + filename
+    filename = "data/Locations/" + filename
     with open(filename, 'r') as mapFile:
         level_map = []
         ind = 0
@@ -334,7 +345,7 @@ def load_level(filename):
 
 
 def get_teleport(filename):
-    filename = "data/" + filename
+    filename = "data/Locations/" + filename
     with open(filename, 'r') as mapFile:
         for i in mapFile:
             teleports = i.strip().split('/')
@@ -371,18 +382,22 @@ def generate_level(level):
 
 
 pygame.display.set_caption('Space escape')
-coin_sound = pygame.mixer.Sound('data/Coin.mp3')
-leap_sound = pygame.mixer.Sound('data/Leap.mp3')
-victory_sound = pygame.mixer.Sound('data/Victory.mp3')
+coin_sound = pygame.mixer.Sound(load_sound('Coin.mp3'))
+leap_sound = pygame.mixer.Sound(load_sound('Leap.mp3'))
+victory_sound = pygame.mixer.Sound(load_sound('Victory.mp3'))
+full_victory_sound = pygame.mixer.Sound(load_sound('Victory_full.mp3'))
+death_sound = pygame.mixer.Sound(load_sound('death.mp3'))
 start_screen()
+map_file = 'map.map'
 level_map = load_level(map_file)
 teleports = get_teleport(map_file)
 hero, max_x, max_y = generate_level(level_map)
-level_indexes = level_line_counter()
-coins = get_coins(level_indexes)
+level_indexes = level_line_counter(map_file)
+coins = get_coins(level_indexes, map_file)
 while running:
     if hero.reloading:
         print('Reloading level...')
+        pygame.mixer.stop()
         player = None
         running = True
         clock = pygame.time.Clock()
@@ -394,8 +409,8 @@ while running:
         level_map = load_level(map_file)
         teleports = get_teleport(map_file)
         hero, max_x, max_y = generate_level(level_map)
-        level_indexes = level_line_counter()
-        coins = get_coins(level_indexes)
+        level_indexes = level_line_counter(map_file)
+        coins = get_coins(level_indexes, map_file)
         hero.coins = 0
         hero.total_coins = 0
         screen.fill(pygame.Color("black"))
