@@ -288,6 +288,24 @@ def start_screen():
         clock.tick(FPS)
 
 
+def main_menu():
+    fon = pygame.transform.scale(load_image('main_menu.png'), (1100, 800))
+    screen.blit(fon, (0, 0))
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                terminate()
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                x, y = int(event.pos[0]), int(event.pos[1])
+                if x >= 251 and x <= 867 and 317 <= y <= 457:
+                    return
+                elif x >= 251 and x <= 867 and 524 <= y <= 663:
+                    terminate()
+
+        pygame.display.flip()
+        clock.tick(FPS)
+
+
 def game_over_screen():
     pygame.mixer.stop()
     pygame.mixer.Sound.play(death_sound)
@@ -388,6 +406,7 @@ victory_sound = pygame.mixer.Sound(load_sound('Victory.mp3'))
 full_victory_sound = pygame.mixer.Sound(load_sound('Victory_full.mp3'))
 death_sound = pygame.mixer.Sound(load_sound('death.mp3'))
 start_screen()
+main_menu()
 map_file = 'map.map'
 level_map = load_level(map_file)
 teleports = get_teleport(map_file)
@@ -430,6 +449,12 @@ while running:
                 Player.move1(hero, "up")
                 for coin in particle_sprites:
                     coin.kill()
+            elif event.key == pygame.K_q:
+                terminate()
+            elif event.key == pygame.K_r:
+                hero.pos = (0, 0)
+                screen.fill(pygame.Color("black"))
+                hero.reloading = True
             elif event.key == pygame.K_DOWN or event.key == pygame.K_s:
                 pygame.mixer.Sound.play(leap_sound)
                 Player.move1(hero, "down")
