@@ -2,6 +2,7 @@ import pygame
 import os
 import sys
 import random
+import os
 
 
 def load_image(name, color_key=None):
@@ -127,7 +128,7 @@ class Player(Sprite):
             coin_group.draw(screen)
             coin_group.update()
             pygame.display.flip()
-            clock.tick(16)
+            clock.tick(14)
 
     def move1(self, movement):
         x, y = hero.pos
@@ -191,7 +192,7 @@ class Player(Sprite):
 def get_coins(n, filename):
     filename = 'data/Locations/' + filename
     with open(filename, 'r') as mapFile:
-        coins = []
+        ret_coins = []
         lines = []
         counter = 0
         for line in mapFile:
@@ -199,23 +200,23 @@ def get_coins(n, filename):
                 if hero.levels % 2 == 0:
                     lines.append(line.strip())
             counter += 1
-        coin = 0
+        coin_adder = 0
         for line in lines[0:n[0]]:
-            coin += line[0:line.index(':')].count('$')
-        coins.append(coin)
-        coin = 0
+            coin_adder += line[0:line.index(':')].count('$')
+        ret_coins.append(coin_adder)
+        coin_adder = 0
         for line in lines[0:n[0]]:
-            coin += line[line.index(':'):].count('$')
-        coins.append(coin)
-        coin = 0
+            coin_adder += line[line.index(':'):].count('$')
+        ret_coins.append(coin_adder)
+        coin_adder = 0
         for line in lines[n[0]:n[1]]:
-            coin += line[line.index(':'):].count('$')
-        coins.append(coin)
-        coin = 0
+            coin_adder += line[line.index(':'):].count('$')
+        ret_coins.append(coin_adder)
+        coin_adder = 0
         for line in lines[n[0]:n[1]]:
-            coin += line[0:line.index(':')].count('$')
-        coins.append(coin)
-    return coins
+            coin_adder += line[0:line.index(':')].count('$')
+        ret_coins.append(coin_adder)
+    return ret_coins
 
 
 def level_line_counter(filename):
@@ -297,9 +298,9 @@ def main_menu():
                 terminate()
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 x, y = int(event.pos[0]), int(event.pos[1])
-                if x >= 251 and x <= 867 and 317 <= y <= 457:
+                if 251 <= x <= 867 and 317 <= y <= 457:
                     return
-                elif x >= 251 and x <= 867 and 524 <= y <= 663:
+                elif 251 <= x <= 867 and 524 <= y <= 663:
                     terminate()
 
         pygame.display.flip()
@@ -323,6 +324,28 @@ def game_over_screen():
                     screen.fill(pygame.Color("black"))
                     hero.reloading = True
                     return
+        pygame.display.flip()
+        clock.tick(FPS)
+
+
+def next_level():
+    pygame.mixer.stop()
+    fon = pygame.transform.scale(load_image('Next_level.png'), (1100, 800))
+    screen.blit(fon, (0, 0))
+    pygame.mixer.Sound.play(full_victory_sound)
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                terminate()
+            elif event.type == pygame.KEYDOWN:
+                if event.type == pygame.QUIT:
+                    terminate()
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                x, y = int(event.pos[0]), int(event.pos[1])
+                if 251 <= x <= 867 and 317 <= y <= 457:
+                    terminate()
+                elif 251 <= x <= 867 and 524 <= y <= 663:
+                    terminate()
         pygame.display.flip()
         clock.tick(FPS)
 
@@ -352,23 +375,23 @@ def victory_screen():
 def load_level(filename):
     filename = "data/Locations/" + filename
     with open(filename, 'r') as mapFile:
-        level_map = []
+        lvl_map = []
         ind = 0
         for line in mapFile:
             if ind != 0:
-                level_map.append(line.strip())
+                lvl_map.append(line.strip())
             ind += 1
-    max_width = max(map(len, level_map))
-    return list(map(lambda x: list(x.ljust(max_width, '.')), level_map))
+    max_width = max(map(len, lvl_map))
+    return list(map(lambda x: list(x.ljust(max_width, '.')), lvl_map))
 
 
 def get_teleport(filename):
     filename = "data/Locations/" + filename
     with open(filename, 'r') as mapFile:
         for i in mapFile:
-            teleports = i.strip().split('/')
+            returner_teleports = i.strip().split('/')
             break
-        return teleports
+        return returner_teleports
 
 
 def generate_level(level):
@@ -487,5 +510,5 @@ while running:
     if hero.levels == len(coins):
         pygame.mixer.Sound.play(victory_sound)
         print('You won and collected', hero.total_coins, 'coins. Congrats!')
-        victory_screen()
+        next_level()
 pygame.quit()
