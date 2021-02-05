@@ -1,5 +1,4 @@
 import pygame
-import os
 import sys
 import random
 import os
@@ -113,6 +112,7 @@ class Player(Sprite):
         self.rotation = 'up'
         self.pos = (pos_x, pos_y)
         self.reloading = False
+        self.location_number = 1
 
     def move(self, x, y):
         if not self.reloading:
@@ -128,7 +128,7 @@ class Player(Sprite):
             coin_group.draw(screen)
             coin_group.update()
             pygame.display.flip()
-            clock.tick(14)
+            clock.tick(15)
 
     def move1(self, movement):
         x, y = hero.pos
@@ -165,14 +165,14 @@ class Player(Sprite):
                 self.levels += 1
                 self.total_coins += self.coins
                 self.coins = 0
-                print('Level', self.levels, 'completed!')
-                pygame.mixer.Sound.play(victory_sound)
+                print('Level', self.levels, 'completed!', '[Location -', locations[location_number - 1] + ']')
+                pygame.mixer.Sound.play(next_level_sound)
             elif self.coins < coins[self.levels] and level_map[y][x] == 'x':
                 print('Not enough')
             elif hero.levels + 1 == len(coins) and self.coins == coins[self.levels] and level_map[y][x] == 'x':
                 self.total_coins += self.coins
                 self.levels += 1
-                print('Level', self.levels, 'completed!')
+                print('Level', self.levels, 'completed!', '[Location -', locations[location_number - 1] + ']')
 
     def balance(self):
         print(self.total_coins)
@@ -302,6 +302,10 @@ def main_menu():
                     return
                 elif 251 <= x <= 867 and 524 <= y <= 663:
                     terminate()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_q:
+                    print('You pressed "Q" to quit the game')
+                    terminate()
 
         pygame.display.flip()
         clock.tick(FPS)
@@ -310,6 +314,7 @@ def main_menu():
 def game_over_screen():
     pygame.mixer.stop()
     pygame.mixer.Sound.play(death_sound)
+    pygame.display.set_caption('Space escape I, YOU DIED!')
     fon = pygame.transform.scale(load_image('lost.png'), (1100, 800))
     screen.blit(fon, (0, 0))
     while True:
@@ -318,6 +323,7 @@ def game_over_screen():
                 terminate()
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_q:
+                    print('You pressed "Q" to quit the game')
                     terminate()
                 elif event.key == pygame.K_r:
                     hero.pos = (0, 0)
@@ -329,7 +335,12 @@ def game_over_screen():
 
 
 def next_level():
+    global location_number
     pygame.mixer.stop()
+    pygame.display.set_caption('Space escape I, changing location...')
+    if location_number == len(locations):
+        victory_screen()
+        return
     fon = pygame.transform.scale(load_image('Next_level.png'), (1100, 800))
     screen.blit(fon, (0, 0))
     pygame.mixer.Sound.play(full_victory_sound)
@@ -340,10 +351,15 @@ def next_level():
             elif event.type == pygame.KEYDOWN:
                 if event.type == pygame.QUIT:
                     terminate()
+                if event.key == pygame.K_q:
+                    print('You pressed "Q" to quit the game')
+                    terminate()
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 x, y = int(event.pos[0]), int(event.pos[1])
                 if 251 <= x <= 867 and 317 <= y <= 457:
-                    terminate()
+                    location_number += 1
+                    hero.reloading = True
+                    return
                 elif 251 <= x <= 867 and 524 <= y <= 663:
                     terminate()
         pygame.display.flip()
@@ -355,21 +371,27 @@ def victory_screen():
     fon = pygame.transform.scale(load_image('victory.png'), (1100, 800))
     screen.blit(fon, (0, 0))
     pygame.mixer.Sound.play(full_victory_sound)
+    pygame.display.set_caption('Space escape I, VICTORY')
+    print('You totally collected ' + str(all_coins) + ' coins!')
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 terminate()
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_q:
+                    print('You pressed "Q" to quit the game')
                     terminate()
-                    return
-                elif event.key == pygame.K_r:
-                    hero.pos = (0, 0)
-                    screen.fill(pygame.Color("black"))
-                    hero.reloading = True
                     return
         pygame.display.flip()
         clock.tick(FPS)
+
+
+def check_location(filename):
+    filename = "data/Locations/" + filename
+    if filename.split('.')[-1] != 'map':
+        print('Location', filename, 'is incorrect')
+        return False
+    return True
 
 
 def load_level(filename):
@@ -422,20 +444,27 @@ def generate_level(level):
     return new_player, x, y
 
 
-pygame.display.set_caption('Space escape')
+pygame.display.set_caption('Space escape I')
 coin_sound = pygame.mixer.Sound(load_sound('Coin.mp3'))
 leap_sound = pygame.mixer.Sound(load_sound('Leap.mp3'))
-victory_sound = pygame.mixer.Sound(load_sound('Victory.mp3'))
+next_level_sound = pygame.mixer.Sound(load_sound('next_level.mp3'))
 full_victory_sound = pygame.mixer.Sound(load_sound('Victory_full.mp3'))
 death_sound = pygame.mixer.Sound(load_sound('death.mp3'))
 start_screen()
 main_menu()
-map_file = 'map.map'
+location_number = 1
+locations = [f for f in os.listdir('data/Locations') if check_location(f)]
+if len(locations) == 0:
+    print('All locations are incorrect, unable to load them')
+    terminate()
+map_file = locations[location_number - 1]
 level_map = load_level(map_file)
 teleports = get_teleport(map_file)
 hero, max_x, max_y = generate_level(level_map)
 level_indexes = level_line_counter(map_file)
 coins = get_coins(level_indexes, map_file)
+pygame.display.set_caption('Space escape I, level - ' + str(locations[0]))
+all_coins = 0
 while running:
     if hero.reloading:
         print('Reloading level...')
@@ -447,12 +476,13 @@ while running:
         hero_group = SpriteGroup()
         coin_group = SpriteGroup()
         particle_sprites = SpriteGroup()
-        start_screen()
+        map_file = locations[location_number - 1]
         level_map = load_level(map_file)
         teleports = get_teleport(map_file)
         hero, max_x, max_y = generate_level(level_map)
         level_indexes = level_line_counter(map_file)
         coins = get_coins(level_indexes, map_file)
+        pygame.display.set_caption('Space escape I, level - ' + str(locations[location_number - 1]))
         hero.coins = 0
         hero.total_coins = 0
         screen.fill(pygame.Color("black"))
@@ -497,7 +527,8 @@ while running:
                 Player.balance(hero)
             elif event.key == pygame.K_SPACE:
                 Player.move1(hero, "space")
-            elif event.key == pygame.K_q:
+            if event.key == pygame.K_q:
+                print('You pressed "Q" to quit the game')
                 terminate()
     screen.fill(pygame.Color("black"))
     hero.move(hero.pos[0], hero.pos[1])
@@ -508,7 +539,8 @@ while running:
     for coin in particle_sprites:
         coin.kill()
     if hero.levels == len(coins):
-        pygame.mixer.Sound.play(victory_sound)
+        pygame.mixer.Sound.play(next_level_sound)
         print('You won and collected', hero.total_coins, 'coins. Congrats!')
+        all_coins += hero.total_coins
         next_level()
 pygame.quit()
