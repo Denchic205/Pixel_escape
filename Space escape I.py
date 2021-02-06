@@ -282,6 +282,8 @@ def terminate():
 
 def start_screen():
     fon = pygame.transform.scale(load_image('fon.png'), (1100, 800))
+    main = pygame.mixer.Channel(1)
+    main.play(main_sound)
     screen.blit(fon, (0, 0))
     while True:
         for event in pygame.event.get():
@@ -290,7 +292,10 @@ def start_screen():
             elif event.type == pygame.KEYDOWN or \
                     event.type == pygame.MOUSEBUTTONDOWN:
                 pygame.display.set_mode(screen_size)
+                main.stop()
                 return
+        if main.get_busy() == 0:
+            main.play(main_sound)
         pygame.display.flip()
         clock.tick(FPS)
 
@@ -503,6 +508,7 @@ leap_sound = pygame.mixer.Sound(load_sound('Leap.mp3'))
 next_level_sound = pygame.mixer.Sound(load_sound('next_level.mp3'))
 full_victory_sound = pygame.mixer.Sound(load_sound('Victory_full.mp3'))
 death_sound = pygame.mixer.Sound(load_sound('death.mp3'))
+main_sound = pygame.mixer.Sound(load_sound('Space escape.mp3'))
 start_screen()
 main_menu()
 location_number = 1
