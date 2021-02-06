@@ -41,7 +41,13 @@ pygame.display.set_icon(load_image('main.png'))
 tile_images = {
     'wall': load_image('box.png'),
     'empty': load_image('empty.png'),
-    'exit': load_image('exit.png'),
+    'Exit_red': load_image('Exit_red.png'),
+    'Exit_green': load_image('Exit_green.png'),
+    'Exit_blue': load_image('Exit_blue.png'),
+    'Exit_yellow': load_image('Exit_yellow.png'),
+    'Red_teleport': load_image('Red_teleport.png'),
+    'Green_teleport': load_image('Green_teleport.png'),
+    'Blue_teleport': load_image('Blue_teleport.png'),
     'Spikes_left': pygame.transform.flip(load_image('Spikes_right_left.png'), True, False),
     'Spikes_right': load_image('Spikes_right_left.png'),
     'Spikes_up': pygame.transform.flip(load_image('Spikes_down_up.png'), False, True),
@@ -108,7 +114,7 @@ class Player(Sprite):
         self.levels = 0
         self.total_coins = 0
         self.rect = self.image.get_rect().move(
-            tile_width * pos_x + 15, tile_height * pos_y + 5)
+            tile_width * pos_x + 10, tile_height * pos_y + 10)
         self.rotation = 'up'
         self.pos = (pos_x, pos_y)
         self.reloading = False
@@ -118,7 +124,7 @@ class Player(Sprite):
         if not self.reloading:
             self.pos = (x, y)
             self.rect = self.image.get_rect().move(
-                tile_width * self.pos[0] + 15, tile_height * self.pos[1] + 5)
+                tile_width * self.pos[0] + 10, tile_height * self.pos[1] + 10)
             sprite_group.draw(screen)
             sprite_group.update()
             hero_group.draw(screen)
@@ -306,7 +312,6 @@ def main_menu():
                 if event.key == pygame.K_q:
                     print('You pressed "Q" to quit the game')
                     terminate()
-
         pygame.display.flip()
         clock.tick(FPS)
 
@@ -386,10 +391,22 @@ def victory_screen():
         clock.tick(FPS)
 
 
-def check_location(filename):
-    filename = "data/Locations/" + filename
-    if filename.split('.')[-1] != 'map':
+def check_location(name):
+    filename = 'data/Locations/' + name
+    if name.split('.')[-1] != 'map':
         print('Location', filename, 'is incorrect')
+        return False
+    if word_counter(location_map_returner(filename), ':') == 0:
+        print('Location', filename, 'is incorrect, no symbols ":"')
+        return False
+    if word_counter(location_map_returner(filename), '|') == 0:
+        print('Location', filename, 'is incorrect, no symbols "|"')
+        return False
+    if word_counter(location_map_returner(filename), 'x') > 4:
+        print('Location', filename, 'is incorrect, too many exits')
+        return False
+    if word_counter(location_map_returner(filename), 'x') < 4:
+        print('Location', filename, 'is incorrect, not enough exits')
         return False
     return True
 
@@ -398,25 +415,44 @@ def load_level(filename):
     filename = "data/Locations/" + filename
     with open(filename, 'r') as mapFile:
         lvl_map = []
-        ind = 0
         for line in mapFile:
-            if ind != 0:
-                lvl_map.append(line.strip())
-            ind += 1
+            lvl_map.append(line.strip())
     max_width = max(map(len, lvl_map))
     return list(map(lambda x: list(x.ljust(max_width, '.')), lvl_map))
 
 
 def get_teleport(filename):
     filename = "data/Locations/" + filename
-    with open(filename, 'r') as mapFile:
+    location = location_map_returner(filename)
+    teleport_returner = []
+    for y in range(len(location)):
+        for x in range(len(location[y])):
+            if location[y][x] == 'r':
+                teleport_returner.insert(0, '{},{}'.format(x, y))
+            if location[y][x] == 'g':
+                teleport_returner.insert(1, '{},{}'.format(x, y))
+            if location[y][x] == 'b':
+                teleport_returner.insert(2, '{},{}'.format(x, y))
+    return teleport_returner
+
+
+def location_map_returner(file):
+    location_map = []
+    with open(file, 'r') as mapFile:
         for i in mapFile:
-            returner_teleports = i.strip().split('/')
-            break
-        return returner_teleports
+            location_map.append(i)
+    return location_map
+
+
+def word_counter(list, word):
+    count = 0
+    for line in list:
+        count += ''.join(line).count(word)
+    return count
 
 
 def generate_level(level):
+    successful = []
     new_player, x, y = None, None, None
     for y in range(len(level)):
         for x in range(len(level[y])):
@@ -426,6 +462,12 @@ def generate_level(level):
                 Tile('wall', x, y)
             elif level[y][x] == 'L':
                 Tile('Spikes_left', x, y)
+            elif level[y][x] == 'r':
+                Tile('Red_teleport', x, y)
+            elif level[y][x] == 'g':
+                Tile('Green_teleport', x, y)
+            elif level[y][x] == 'b':
+                Tile('Blue_teleport', x, y)
             elif level[y][x] == 'R':
                 Tile('Spikes_right', x, y)
             elif level[y][x] == 'U':
@@ -433,7 +475,18 @@ def generate_level(level):
             elif level[y][x] == 'D':
                 Tile('Spikes_down', x, y)
             elif level[y][x] == 'x':
-                Tile('exit', x, y)
+                if x < level[y].index(':') and 'RED' not in successful:
+                    Tile('Exit_red', x, y)
+                    successful.append('RED')
+                elif x > level[y].index(':') and 'GREEN' not in successful:
+                    Tile('Exit_green', x, y)
+                    successful.append('GREEN')
+                elif x < level[y].index(':') and 'RED' in successful:
+                    Tile('Exit_yellow', x, y)
+                    successful.append('YELLOW')
+                elif x > level[y].index(':') and 'GREEN' in successful:
+                    Tile('Exit_blue', x, y)
+                    successful.append('BLUE')
             elif level[y][x] == '$':
                 Coin(x * tile_width + 12, y * tile_height + 12, coin_group, load_image('Coin_sheet.png'), 8, 1)
                 Tile('empty', x, y)
