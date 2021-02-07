@@ -50,6 +50,9 @@ tile_images = {
     'Blue_teleport': load_image('Blue_teleport.png'),
     'Spikes_left': pygame.transform.flip(load_image('Spikes_right_left.png'), True, False),
     'Spikes_right': load_image('Spikes_right_left.png'),
+    'Middle': load_image('Middle.png'),
+    'Line_up_down': load_image('Line_up_down.png'),
+    'Line_left_right': load_image('Line_left_right.png'),
     'Spikes_up': pygame.transform.flip(load_image('Spikes_down_up.png'), False, True),
     'Spikes_down': load_image('Spikes_down_up.png')
 }
@@ -208,19 +211,19 @@ def get_coins(n, filename):
             counter += 1
         coin_adder = 0
         for line in lines[0:n[0]]:
-            coin_adder += line[0:line.index(':')].count('$')
+            coin_adder += line[0:line.index('|')].count('$')
         ret_coins.append(coin_adder)
         coin_adder = 0
         for line in lines[0:n[0]]:
-            coin_adder += line[line.index(':'):].count('$')
+            coin_adder += line[line.index('|'):].count('$')
         ret_coins.append(coin_adder)
         coin_adder = 0
         for line in lines[n[0]:n[1]]:
-            coin_adder += line[line.index(':'):].count('$')
+            coin_adder += line[line.index('|'):].count('$')
         ret_coins.append(coin_adder)
         coin_adder = 0
         for line in lines[n[0]:n[1]]:
-            coin_adder += line[0:line.index(':')].count('$')
+            coin_adder += line[0:line.index('|')].count('$')
         ret_coins.append(coin_adder)
     return ret_coins
 
@@ -234,7 +237,7 @@ def level_line_counter(filename):
             lines.append(line)
     col = 0
     for line in lines:
-        if '|' in line:
+        if '-' in line:
             indexes.append(col)
         col += 1
     return indexes
@@ -401,17 +404,20 @@ def check_location(name):
     if name.split('.')[-1] != 'map':
         print('Location', filename, 'is incorrect')
         return False
-    if word_counter(location_map_returner(filename), ':') == 0:
-        print('Location', filename, 'is incorrect, no symbols ":"')
-        return False
     if word_counter(location_map_returner(filename), '|') == 0:
         print('Location', filename, 'is incorrect, no symbols "|"')
+        return False
+    if word_counter(location_map_returner(filename), '-') == 0:
+        print('Location', filename, 'is incorrect, no symbols "-"')
         return False
     if word_counter(location_map_returner(filename), 'x') > 4:
         print('Location', filename, 'is incorrect, too many exits')
         return False
     if word_counter(location_map_returner(filename), 'x') < 4:
         print('Location', filename, 'is incorrect, not enough exits')
+        return False
+    if word_counter(location_map_returner(filename), '@') != 1:
+        print('Location', filename, 'is incorrect, having a problem with a hero')
         return False
     return True
 
@@ -480,16 +486,16 @@ def generate_level(level):
             elif level[y][x] == 'D':
                 Tile('Spikes_down', x, y)
             elif level[y][x] == 'x':
-                if x < level[y].index(':') and 'RED' not in successful:
+                if x < level[y].index('|') and 'RED' not in successful:
                     Tile('Exit_red', x, y)
                     successful.append('RED')
-                elif x > level[y].index(':') and 'GREEN' not in successful:
+                elif x > level[y].index('|') and 'GREEN' not in successful:
                     Tile('Exit_green', x, y)
                     successful.append('GREEN')
-                elif x < level[y].index(':') and 'RED' in successful:
+                elif x < level[y].index('|') and 'RED' in successful:
                     Tile('Exit_yellow', x, y)
                     successful.append('YELLOW')
-                elif x > level[y].index(':') and 'GREEN' in successful:
+                elif x > level[y].index('|') and 'GREEN' in successful:
                     Tile('Exit_blue', x, y)
                     successful.append('BLUE')
             elif level[y][x] == '$':
@@ -499,6 +505,13 @@ def generate_level(level):
                 Tile('empty', x, y)
                 new_player = Player(x, y)
                 level[y][x] = "."
+            elif level[y][x] == '-':
+                Tile('Line_left_right', x, y)
+            elif level[y][x] == '|':
+                if level[y][x + 1] == '-':
+                    Tile('Middle', x, y)
+                else:
+                    Tile('Line_up_down', x, y)
     return new_player, x, y
 
 
