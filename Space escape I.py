@@ -177,6 +177,7 @@ class Player(Sprite):
                 print('Level', self.levels, 'completed!', '[Location -', locations[location_number - 1] + ']')
                 pygame.mixer.Sound.play(next_level_sound)
             elif self.coins < coins[self.levels] and level_map[y][x] == 'x':
+                pygame.mixer.Sound.play(error_sound)
                 print('Not enough')
             elif hero.levels + 1 == len(coins) and self.coins == coins[self.levels] and level_map[y][x] == 'x':
                 self.total_coins += self.coins
@@ -226,21 +227,6 @@ def get_coins(n, filename):
             coin_adder += line[0:line.index('|')].count('$')
         ret_coins.append(coin_adder)
     return ret_coins
-
-
-def level_line_counter(filename):
-    filename = 'data/Locations/' + filename
-    lines = []
-    indexes = []
-    with open(filename, 'r') as mapFile:
-        for line in mapFile:
-            lines.append(line)
-    col = 0
-    for line in lines:
-        if '-' in line:
-            indexes.append(col)
-        col += 1
-    return indexes
 
 
 class Coin(pygame.sprite.Sprite):
@@ -385,6 +371,7 @@ def victory_screen():
     screen.blit(fon, (0, 0))
     pygame.mixer.Sound.play(full_victory_sound)
     pygame.display.set_caption('Space escape I, VICTORY')
+    print('You won the game!')
     print('You totally collected ' + str(all_coins) + ' coins!')
     while True:
         for event in pygame.event.get():
@@ -399,8 +386,26 @@ def victory_screen():
         clock.tick(FPS)
 
 
+def level_line_counter(filename):
+    filename = 'data/Locations/' + filename
+    lines = []
+    indexes = []
+    with open(filename, 'r') as mapFile:
+        for line in mapFile:
+            lines.append(line)
+    count = 0
+    for line in lines:
+        if '-' in line:
+            indexes.append(count)
+        count += 1
+    return indexes
+
+
 def check_location(name):
     filename = 'data/Locations/' + name
+    if not os.path.isfile(filename):
+        print('No such file in directory', filename)
+        return False
     if name.split('.')[-1] != 'map':
         print('Location', filename, 'is incorrect')
         return False
@@ -417,8 +422,40 @@ def check_location(name):
         print('Location', filename, 'is incorrect, not enough exits')
         return False
     if word_counter(location_map_returner(filename), '@') != 1:
-        print('Location', filename, 'is incorrect, having a problem with a hero')
+        print('Location', filename, 'is incorrect, having a problem with a hero number')
         return False
+    if word_counter(location_map_returner(filename), 'r') != 1:
+        print('Location', filename, 'is incorrect, having a problem with a number of teleports')
+        return False
+    if word_counter(location_map_returner(filename), 'g') != 1:
+        print('Location', filename, 'is incorrect, having a problem with a number of teleports')
+        return False
+    if word_counter(location_map_returner(filename), 'b') != 1:
+        print('Location', filename, 'is incorrect, having a problem with a number of teleports')
+        return False
+    if not location_positions_checker(name):
+        print('Location', filename, 'is incorrect, having a problem with a position of something')
+        return False
+    return True
+
+
+def location_positions_checker(name):
+    location = location_map_returner('data/Locations/' + name)
+    indexes = level_line_counter(name)
+    for y in range(len(location)):
+        for x in range(len(location[y])):
+            if location[y][x] == '@':
+                if y >= indexes[0] or x >= location[y].index('|'):
+                    return False
+            elif location[y][x] == 'r':
+                if y >= indexes[0] or x <= location[y].index('|'):
+                    return False
+            elif location[y][x] == 'g':
+                if y <= indexes[0] or x <= location[y].index('|'):
+                    return False
+            elif location[y][x] == 'b':
+                if y <= indexes[0] or x >= location[y].index('|'):
+                    return False
     return True
 
 
@@ -522,6 +559,7 @@ next_level_sound = pygame.mixer.Sound(load_sound('next_level.mp3'))
 full_victory_sound = pygame.mixer.Sound(load_sound('Victory_full.mp3'))
 death_sound = pygame.mixer.Sound(load_sound('death.mp3'))
 main_sound = pygame.mixer.Sound(load_sound('Space escape.mp3'))
+error_sound = pygame.mixer.Sound(load_sound('Error_sound.mp3'))
 start_screen()
 main_menu()
 location_number = 1
@@ -543,12 +581,14 @@ while running:
         pygame.mixer.stop()
         player = None
         running = True
-        clock = pygame.time.Clock()
         sprite_group = SpriteGroup()
         hero_group = SpriteGroup()
         coin_group = SpriteGroup()
         particle_sprites = SpriteGroup()
         map_file = locations[location_number - 1]
+        if not check_location(map_file):
+            print('Location deleted or changed')
+            terminate()
         level_map = load_level(map_file)
         teleports = get_teleport(map_file)
         hero, max_x, max_y = generate_level(level_map)
@@ -612,7 +652,7 @@ while running:
         coin.kill()
     if hero.levels == len(coins):
         pygame.mixer.Sound.play(next_level_sound)
-        print('You won and collected', hero.total_coins, 'coins. Congrats!')
+        print('You have completed the location and collected', hero.total_coins, 'coins. Congrats!')
         all_coins += hero.total_coins
         next_level()
 pygame.quit()
