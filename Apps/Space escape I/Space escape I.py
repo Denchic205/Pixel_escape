@@ -37,7 +37,6 @@ screen = pygame.display.set_mode((1100, 750))
 FPS = 60
 screen_rect = (0, 0, weight, height)
 pygame.display.set_icon(load_image('main.png'))
-
 tile_images = {
     'wall': load_image('box.png'),
     'empty': load_image('empty.png'),
@@ -58,12 +57,10 @@ tile_images = {
 }
 player_image = load_image('main.png')
 player_image2 = load_image('main2.png')
-
 tile_width = tile_height = 50
 
 
 class SpriteGroup(pygame.sprite.Group):
-
     def __init__(self):
         super().__init__()
 
@@ -121,7 +118,6 @@ class Player(Sprite):
         self.rotation = 'up'
         self.pos = (pos_x, pos_y)
         self.reloading = False
-        self.location_number = 1
 
     def move(self, x, y):
         if not self.reloading:
@@ -139,35 +135,35 @@ class Player(Sprite):
             pygame.display.flip()
             clock.tick(15)
 
-    def move1(self, movement):
+    def action(self, action):
         x, y = hero.pos
-        if movement == "up":
+        if action == "up":
             self.image = player_image
-            if y > 0 and level_map[y - 1][x] not in ["#", "R", "U", "L"]:
+            if y > 0 and level_map[y - 1][x] not in ["#", "R", "U", "L", "|", "-"]:
                 hero.move(x, y - 1)
                 create_particles((self.pos[0] * tile_width, self.pos[1] * tile_height), 8)
-                Player.move1(hero, "up")
-        elif movement == "down":
+                Player.action(hero, "up")
+        elif action == "down":
             self.image = player_image
             self.image = pygame.transform.flip(self.image, False, True)
-            if y < max_y - 1 and level_map[y + 1][x] not in ["#", "R", "L", "D"]:
+            if y < max_y - 1 and level_map[y + 1][x] not in ["#", "R", "L", "D", "|", "-"]:
                 hero.move(x, y + 1)
                 create_particles((self.pos[0] * tile_width, self.pos[1] * tile_height), 8)
-                Player.move1(hero, "down")
-        elif movement == "left":
+                Player.action(hero, "down")
+        elif action == "left":
             self.image = player_image2
             self.image = pygame.transform.flip(self.image, True, False)
-            if x > 0 and level_map[y][x - 1] not in ["#", "L", "U", "D"]:
+            if x > 0 and level_map[y][x - 1] not in ["#", "L", "U", "D", "|", "-"]:
                 hero.move(x - 1, y)
                 create_particles((self.pos[0] * tile_width, self.pos[1] * tile_height), 8)
-                Player.move1(hero, "left")
-        elif movement == "right":
+                Player.action(hero, "left")
+        elif action == "right":
             self.image = player_image2
-            if x < max_x and level_map[y][x + 1] not in ["#", "R", "U", "D"]:
+            if x < max_x and level_map[y][x + 1] not in ["#", "R", "U", "D", "|", "-"]:
                 hero.move(x + 1, y)
                 create_particles((self.pos[0] * tile_width, self.pos[1] * tile_height), 8)
-                Player.move1(hero, "right")
-        elif movement == "space":
+                Player.action(hero, "right")
+        elif action == "space":
             self.image = player_image
             if self.coins == coins[self.levels] and level_map[y][x] == 'x' and hero.levels + 1 != len(coins):
                 hero.pos = int(teleports[self.levels].split(',')[0]), int(teleports[self.levels].split(',')[1])
@@ -199,34 +195,27 @@ class Player(Sprite):
             create_particles((self.pos[0] * tile_width, self.pos[1] * tile_height), 40)
 
 
-def get_coins(n, filename):
-    filename = 'data/Locations/' + filename
-    with open(filename, 'r') as mapFile:
-        ret_coins = []
-        lines = []
-        counter = 0
-        for line in mapFile:
-            if counter != 0:
-                if hero.levels % 2 == 0:
-                    lines.append(line.strip())
-            counter += 1
-        coin_adder = 0
-        for line in lines[0:n[0]]:
-            coin_adder += line[0:line.index('|')].count('$')
-        ret_coins.append(coin_adder)
-        coin_adder = 0
-        for line in lines[0:n[0]]:
-            coin_adder += line[line.index('|'):].count('$')
-        ret_coins.append(coin_adder)
-        coin_adder = 0
-        for line in lines[n[0]:n[1]]:
-            coin_adder += line[line.index('|'):].count('$')
-        ret_coins.append(coin_adder)
-        coin_adder = 0
-        for line in lines[n[0]:n[1]]:
-            coin_adder += line[0:line.index('|')].count('$')
-        ret_coins.append(coin_adder)
-    return ret_coins
+def get_coins(n, name):
+    filename = 'data/Locations/' + name
+    total_coins_list = []
+    lines = location_map_returner(filename)
+    coin_adder = 0
+    for line in lines[0:n[0]]:
+        coin_adder += line[0:line.index('|')].count('$')
+    total_coins_list.append(coin_adder)
+    coin_adder = 0
+    for line in lines[0:n[0]]:
+        coin_adder += line[line.index('|'):].count('$')
+    total_coins_list.append(coin_adder)
+    coin_adder = 0
+    for line in lines[n[0]:n[1]]:
+        coin_adder += line[line.index('|'):].count('$')
+    total_coins_list.append(coin_adder)
+    coin_adder = 0
+    for line in lines[n[0]:n[1]]:
+        coin_adder += line[0:line.index('|')].count('$')
+    total_coins_list.append(coin_adder)
+    return total_coins_list
 
 
 class Coin(pygame.sprite.Sprite):
@@ -266,11 +255,12 @@ particle_sprites = SpriteGroup()
 
 def terminate():
     pygame.quit()
+    print('Closing the game...')
     sys.exit()
 
 
 def start_screen():
-    fon = pygame.transform.scale(load_image('fon.png'), (1100, 800))
+    fon = pygame.transform.scale(load_image('fon.png'), screen_size)
     main = pygame.mixer.Channel(1)
     main.play(main_sound)
     screen.blit(fon, (0, 0))
@@ -290,7 +280,7 @@ def start_screen():
 
 
 def main_menu():
-    fon = pygame.transform.scale(load_image('main_menu.png'), (1100, 800))
+    fon = pygame.transform.scale(load_image('main_menu.png'), screen_size)
     screen.blit(fon, (0, 0))
     while True:
         for event in pygame.event.get():
@@ -314,7 +304,7 @@ def game_over_screen():
     pygame.mixer.stop()
     pygame.mixer.Sound.play(death_sound)
     pygame.display.set_caption('Space escape I, YOU DIED!')
-    fon = pygame.transform.scale(load_image('lost.png'), (1100, 800))
+    fon = pygame.transform.scale(load_image('lost.png'), screen_size)
     screen.blit(fon, (0, 0))
     while True:
         for event in pygame.event.get():
@@ -340,7 +330,7 @@ def next_level():
     if location_number == len(locations):
         victory_screen()
         return
-    fon = pygame.transform.scale(load_image('Next_level.png'), (1100, 800))
+    fon = pygame.transform.scale(load_image('Next_level.png'), screen_size)
     screen.blit(fon, (0, 0))
     pygame.mixer.Sound.play(full_victory_sound)
     while True:
@@ -348,8 +338,6 @@ def next_level():
             if event.type == pygame.QUIT:
                 terminate()
             elif event.type == pygame.KEYDOWN:
-                if event.type == pygame.QUIT:
-                    terminate()
                 if event.key == pygame.K_q:
                     print('You pressed "Q" to quit the game')
                     terminate()
@@ -367,7 +355,7 @@ def next_level():
 
 def victory_screen():
     pygame.mixer.stop()
-    fon = pygame.transform.scale(load_image('victory.png'), (1100, 800))
+    fon = pygame.transform.scale(load_image('victory.png'), screen_size)
     screen.blit(fon, (0, 0))
     pygame.mixer.Sound.play(full_victory_sound)
     pygame.display.set_caption('Space escape I, VICTORY')
@@ -466,7 +454,7 @@ def load_level(filename):
         for line in mapFile:
             lvl_map.append(line.strip())
     max_width = max(map(len, lvl_map))
-    return list(map(lambda x: list(x.ljust(max_width, '.')), lvl_map))
+    return list(map(lambda x: list(x.ljust(max_width)), lvl_map))
 
 
 def get_teleport(filename):
@@ -609,47 +597,45 @@ while running:
         if event.type == pygame.QUIT:
             running = False
         elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_w or event.key == pygame.K_UP:
-                pygame.mixer.Sound.play(leap_sound)
-                Player.move1(hero, "up")
-                for coin in particle_sprites:
-                    coin.kill()
-            elif event.key == pygame.K_q:
+            if event.key == pygame.K_q:
+                print('You pressed "Q" to quit the game')
                 terminate()
             elif event.key == pygame.K_r:
                 hero.pos = (0, 0)
                 screen.fill(pygame.Color("black"))
                 hero.reloading = True
+            elif event.key == pygame.K_w or event.key == pygame.K_UP:
+                pygame.mixer.Sound.play(leap_sound)
+                Player.action(hero, "up")
+                for particle in particle_sprites:
+                    particle.kill()
             elif event.key == pygame.K_DOWN or event.key == pygame.K_s:
                 pygame.mixer.Sound.play(leap_sound)
-                Player.move1(hero, "down")
-                for coin in particle_sprites:
-                    coin.kill()
+                Player.action(hero, "down")
+                for particle in particle_sprites:
+                    particle.kill()
             elif event.key == pygame.K_LEFT or event.key == pygame.K_a:
                 pygame.mixer.Sound.play(leap_sound)
-                Player.move1(hero, "left")
-                for coin in particle_sprites:
-                    coin.kill()
+                Player.action(hero, "left")
+                for particle in particle_sprites:
+                    particle.kill()
             elif event.key == pygame.K_RIGHT or event.key == pygame.K_d:
                 pygame.mixer.Sound.play(leap_sound)
-                Player.move1(hero, "right")
-                for coin in particle_sprites:
-                    coin.kill()
+                Player.action(hero, "right")
+                for particle in particle_sprites:
+                    particle.kill()
             elif event.key == pygame.K_c:
                 Player.balance(hero)
             elif event.key == pygame.K_SPACE:
-                Player.move1(hero, "space")
-            if event.key == pygame.K_q:
-                print('You pressed "Q" to quit the game')
-                terminate()
+                Player.action(hero, "space")
     screen.fill(pygame.Color("black"))
     hero.move(hero.pos[0], hero.pos[1])
     sprite_group.draw(screen)
     hero_group.draw(screen)
     coin_group.draw(screen)
     pygame.display.flip()
-    for coin in particle_sprites:
-        coin.kill()
+    for particle in particle_sprites:
+        particle.kill()
     if hero.levels == len(coins):
         pygame.mixer.Sound.play(next_level_sound)
         print('You have completed the location and collected', hero.total_coins, 'coins. Congrats!')
